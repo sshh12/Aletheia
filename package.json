@@ -1,0 +1,33 @@
+{
+  "name": "aletheia",
+  "version": "0.1.0",
+  "private": false,
+  "dependencies": {
+    "concurrently": "^5.0.0",
+    "react": "^16.11.0",
+    "react-dom": "^16.11.0",
+    "react-scripts": "3.2.0"
+  },
+  "scripts": {
+    "watch": "concurrently \"yarn watch:server\" \"yarn watch:client\"",
+    "watch:client": "node scripts/watch.js",
+    "watch:server": "python server.py",
+    "build": "react-scripts build",
+    "start": "python server.py"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
