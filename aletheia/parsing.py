@@ -3,7 +3,8 @@ import re
 
 def standardize_text(text):
 
-    raw = text.replace('\r', '').replace('“', '\"').replace('”', '\"').replace('’', '\'')
+    raw = text.replace('\r', '').replace('“', '\"')\
+        .replace('”', '\"').replace('’', '\'').replace('–', '-')
     raw = re.sub('\n\s*\n', '\n\n', raw, flags=re.MULTILINE|re.DOTALL)
     raw = re.sub('\n{3,}', '\n\n', raw, flags=re.MULTILINE|re.DOTALL)
 
@@ -17,7 +18,8 @@ def standardize_text(text):
     parsed = '\n'.join(lines)
     parsed = re.sub('\n\n', '!TEMPTOKEN!', parsed, flags=re.MULTILINE|re.DOTALL)
     parsed = re.sub('\n', ' ', parsed, flags=re.MULTILINE|re.DOTALL)
-    parsed = re.sub('!TEMPTOKEN!', '\n\n', parsed, flags=re.MULTILINE|re.DOTALL)
-    parsed = re.sub(':\n\n', ': ', parsed, flags=re.MULTILINE|re.DOTALL)
+    parsed = re.sub('!TEMPTOKEN!', '\n', parsed, flags=re.MULTILINE|re.DOTALL)
+    parsed = re.sub(':\n', ': ', parsed, flags=re.MULTILINE|re.DOTALL)
+    parsed = re.sub('\n"', ' \"', parsed, flags=re.MULTILINE|re.DOTALL)
 
     return parsed
