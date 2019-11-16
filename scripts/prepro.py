@@ -12,8 +12,11 @@ PUBLIC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'pub
 
 def process_sections(raw_sections):
     # gcp_results = api.run_google_cloud(raw_sections)
+    # textrazor_results = api.run_textrazor(raw_sections)
+    # corenlp_results = api.run_corenlp(raw_sections)
     return [
-        dict(text=text)
+        dict(text=text) 
+        # gcp=gcp_results[i], textrazor=textrazor_results[i], corenlp=corenlp_results[i])
         for i, text in enumerate(raw_sections)
     ]
 
@@ -44,7 +47,11 @@ def process_all():
         with open(fn.replace('.txt', '.meta'), 'r', encoding='utf-8') as f:
             meta = f.read().strip().split('\n')
         parsed = parsing.standardize_text(raw)
-        docs.append(process_doc(os.path.basename(fn.replace('.txt', '')), meta, parsed))
+        try:
+            print('Processing ', fn)
+            docs.append(process_doc(os.path.basename(fn.replace('.txt', '')), meta, parsed))
+        except Exception as e:
+            print(e)
     return docs
 
 

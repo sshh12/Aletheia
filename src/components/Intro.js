@@ -20,7 +20,7 @@ function Intro({ db }) {
     for(let j = i + 1; j < docs.length; j++) {
       let doc = docs[i];
       let doc2 = docs[j];
-      docOptions.push(<option key={doc.name + doc2.name} value={doc.name + '--' + doc2.name}>{doc.version} vs {doc2.version}</option>);
+      docOptions.push(<option key={doc.name + doc2.name} value={doc.name + '--' + doc2.name}>{doc.translator} vs {doc2.translator}</option>);
     }
   }
   console.log(versions);
