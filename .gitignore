@@ -106,3 +106,6 @@ venv.bak/
 # .
 node_modules/
 stanford-corenlp-full-2018-10-05/
+*.env
+*.env.bat
+school-nlp*

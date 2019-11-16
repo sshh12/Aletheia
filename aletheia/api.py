@@ -1,13 +1,20 @@
+from google.cloud import language_v1 as language
+from google.cloud.language_v1 import enums
+import textrazor
 import tempfile
 import json
 import os
 
 CORE_NLP_ANNOTS = 'tokenize,ssplit,pos,lemma,ner,depparse,coref,quote'
 CORE_NLP_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'stanford-corenlp-full-2018-10-05', '*'))
-CORE_NLP_JAVA_ARGS = '-Xmx8g'
+
+textrazor.api_key = os.environ.get('TEXTRAZOR_KEY', '')
+textrazor_client = textrazor.TextRazor(extractors=['entities'])
+
+gcp_client = language.LanguageServiceClient()
 
 
-def run_corenlp(texts):
+def run_corenlp(texts, java_args='-Xmx8g'):
 
     temp_dir_file = tempfile.TemporaryFile(delete=False, suffix='.txt')
     temp_files = [tempfile.TemporaryFile(delete=False, suffix='.txt') for _ in texts]
@@ -19,16 +26,50 @@ def run_corenlp(texts):
     for temp_file in temp_files + [temp_dir_file]:
         temp_file.close()
 
-    cmd = 'java {} -cp "{}" edu.stanford.nlp.pipeline.StanfordCoreNLP  [ -annotators {} -outputFormat json ] -filelist {}'.format(CORE_NLP_JAVA_ARGS, CORE_NLP_PATH, CORE_NLP_ANNOTS, temp_dir_file.name)
+    cmd = 'java {} -cp "{}" edu.stanford.nlp.pipeline.StanfordCoreNLP  [ -annotators {} -outputFormat json ] -filelist {}'.format(java_args, CORE_NLP_PATH, CORE_NLP_ANNOTS, temp_dir_file.name)
     os.system(cmd)
 
-    output = []
+    out = []
     for temp_file in temp_files:
         output_fn = os.path.basename(temp_file.name) + '.json'
         cleanup_fns.append(output_fn)
         with open(output_fn, 'r') as f:
-            output.append(json.load(f))
+            out.append(json.load(f))
     for fn in cleanup_fns:
         os.remove(fn)
-    return output
-    
+    return out
+
+
+def run_textrazor(texts):
+    out = []
+    for text in texts:
+        resp = textrazor_client.analyze(text)
+        out.append([
+            dict(id=ent.id, relevance=ent.relevance_score, 
+                conf=ent.confidence_score, freebase_types=ent.freebase_types) 
+            for ent in resp.entities()
+        ])
+    return out
+
+
+def run_google_cloud(texts):
+    out = []
+    for text in texts:
+        text_result = {}
+        document = {'content': text, 'type': enums.Document.Type.PLAIN_TEXT, 'language': 'en'}
+        doc_resp = gcp_client.analyze_sentiment(document, encoding_type=enums.EncodingType.UTF8)
+        text_result['sent_score'] = doc_resp.document_sentiment.score
+        text_result['sent_mag'] = doc_resp.document_sentiment.magnitude
+        text_result['sentences'] = [
+            dict(text=sen.text.content, sent_score=sen.sentiment.score, sent_mag=sen.sentiment.magnitude)
+            for sen in doc_resp.sentences
+        ]
+        ent_resp = gcp_client.analyze_entity_sentiment(document, encoding_type=enums.EncodingType.UTF8)
+        text_result['entities'] = [
+            dict(name=ent.name, type=enums.Entity.Type(ent.type).name,
+                salience=ent.salience, sent_score=ent.sentiment.score,
+                sent_mag=ent.sentiment.magnitude, meta=list(ent.metadata.items()))
+            for ent in ent_resp.entities
+        ]
+        out.append(text_result)
+    return out
