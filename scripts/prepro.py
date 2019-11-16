@@ -18,14 +18,20 @@ def process_sections(raw_sections):
     ]
 
 
-def process_doc(name, raw_doc):
+def process_doc(name, meta, raw_doc):
     poem, book, version = name.split('.')
+    word_cnt = raw_doc.count(' ')
+    section_cnt = raw_doc.count('\n')
+    sections = process_sections(raw_doc.split('\n'))
     doc_data = dict(
         name=name, 
         poem=poem,
         book=book,
+        translator=meta[0],
         version=version,
-        sections=process_sections(raw_doc.split('\n'))
+        word_cnt=word_cnt,
+        section_cnt=section_cnt,
+        sections=sections
     )
     return doc_data
 
@@ -35,8 +41,10 @@ def process_all():
     for fn in glob.iglob(os.path.join(RAW_DB_PATH, '*.*.*.txt')):
         with open(fn, 'r', encoding='utf-8') as f:
             raw = f.read()
+        with open(fn.replace('.txt', '.meta'), 'r', encoding='utf-8') as f:
+            meta = f.read().strip().split('\n')
         parsed = parsing.standardize_text(raw)
-        docs.append(process_doc(os.path.basename(fn.replace('.txt', '')), parsed))
+        docs.append(process_doc(os.path.basename(fn.replace('.txt', '')), meta, parsed))
     return docs
 
 

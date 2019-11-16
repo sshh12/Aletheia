@@ -1,26 +1,41 @@
 import React from 'react';
-import logo from './logo.svg';
+import Intro from './components/Intro';
+import Analyze from './components/Analyze';
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+class App extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {db: null};
+  }
+
+  componentDidMount() {
+    (async () => {
+      let db = await fetch('/db.json').then(res => res.json());
+      this.setState({db: db});
+    })();
+  }
+
+  render() {
+    let { db } = this.state;
+    let search = window.location.search;
+    let selected = null;
+    if(search && db) {
+      let docNames = search.substring(1).split('--');
+      selected = [
+        db.find(doc => doc.name == docNames[0]),
+        db.find(doc => doc.name == docNames[1])
+      ];
+    }
+    return (
+      <div className="App">
+        {!selected && <Intro db={db} />}
+        {selected && <Analyze selected={selected} />}
+      </div>
+    );
+  }
+
 }
 
 export default App;
