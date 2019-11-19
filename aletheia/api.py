@@ -45,8 +45,8 @@ def run_textrazor(texts):
     for text in texts:
         resp = textrazor_client.analyze(text)
         out.append([
-            dict(id=ent.id, relevance=ent.relevance_score, 
-                conf=ent.confidence_score, freebase_types=ent.freebase_types) 
+            dict(id=ent.id, relevance=ent.relevance_score, conf=ent.confidence_score, 
+                freebase_types=ent.freebase_types, text=ent.matched_text, wiki=ent.wikipedia_link) 
             for ent in resp.entities()
         ])
     return out

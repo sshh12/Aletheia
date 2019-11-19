@@ -30,7 +30,7 @@ class App extends React.Component {
     }
     return (
       <div className="App">
-        {!selected && <Intro db={db} />}
+        {!search && !selected && <Intro db={db} />}
         {selected && <Analyze selected={selected} />}
       </div>
     );

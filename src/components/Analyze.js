@@ -98,10 +98,27 @@ function RowAnalyze({ idx, docs, key }) {
 
 function TextBlock({ sec, key, doc }) {
   let sentiment = sec.gcp.sent_score * sec.gcp.sent_mag * 60;
+  let text = sec.text;
+  for(let ent of sec.gcp.entities) {
+    if(ent.salience < 0.01) {
+      continue;
+    }
+    let sent = ent.sent_score * ent.sent_mag;
+    let regex = new RegExp(`\\b${ent.name}\\b`);
+    if(Math.abs(sent) > 0.5) {
+      text = text.replace(regex, `<b style="color: ${heatHSL(sent * 60)}">${ent.name}</b>`);
+    } else {
+      text = text.replace(regex, `<b>${ent.name}</b>`);
+    }
+  }
+  for(let ent of sec.textrazor) {
+    let regex = new RegExp(`\\b${ent.text}\\b`);
+    text = text.replace(regex, `<b>${ent.text}</b>`);
+  }
   return (
     <section key={key} className="style1" style={{ width: '45%' }}>
       <div className="content">
-        <blockquote style={{ borderLeftColor: heatHSL(sentiment) }}>{sec.text}</blockquote>
+        <blockquote style={{ borderLeftColor: heatHSL(sentiment) }} dangerouslySetInnerHTML={{__html: text}}/>
       </div>
     </section>
   );
