@@ -21,5 +21,12 @@ def standardize_text(text):
     parsed = re.sub('!TEMPTOKEN!', '\n', parsed, flags=re.MULTILINE|re.DOTALL)
     parsed = re.sub(':\n', ': ', parsed, flags=re.MULTILINE|re.DOTALL)
     parsed = re.sub('\n"', ' \"', parsed, flags=re.MULTILINE|re.DOTALL)
+    parsed = re.sub(', ,', ',', parsed)
 
     return parsed
+
+
+def realign(text, ref_text):
+    # Already aligned manually
+    # TODO: Automagic alignment
+    return text
