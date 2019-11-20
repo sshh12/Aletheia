@@ -39,7 +39,8 @@ def process_doc(name, meta, raw_doc):
         section_cnt=section_cnt,
         sections=sections,
         corenlp=api.run_corenlp([raw_doc])[0],
-        allennlp=api.run_allennlp([raw_doc])[0]
+        allennlp=api.run_allennlp([raw_doc])[0],
+        readability=api.run_readability([raw_doc])[0]
     )
     return doc_data
 

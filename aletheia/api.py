@@ -1,6 +1,8 @@
 from google.cloud import language_v1 as language
 from google.cloud.language_v1 import enums
 from allennlp.predictors.predictor import Predictor
+import syntok.segmenter as segmenter
+import readability
 import textrazor
 import tempfile
 import json
@@ -88,5 +90,21 @@ def run_allennlp(texts):
         data['qa_what'] = qa_predictor.predict(passage=text, question='What?')
         data['qa_why'] = qa_predictor.predict(passage=text, question='Why?')
         data['sent'] = sent_predictor.predict(sentence=text)
+        out.append(data)
+    return out
+
+
+def run_readability(texts):
+    out = []
+    for text in texts:
+        tokenized = '\n\n'.join(
+            '\n'.join(
+            ' '.join(token.value for token in sentence) 
+            for sentence in paragraph) 
+            for paragraph in segmenter.analyze(text))
+        results = readability.getmeasures(tokenized, lang='en')
+        data = {}
+        for key in results:
+            data[key.replace(' ', '')] = dict(results[key])
         out.append(data)
     return out
