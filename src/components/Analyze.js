@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 
+
+const COMMON_WORDS = new Set([
+  'the', 'and', 'of', 'to', 'with', 'her', 'in', 'a', 'his', 'i', 'she', 'my', 'from', 
+  'on', 'you', 'that', 'he', 'your', 'for', 'is', '-', 'as', 'by', 'not', 'all', 'me', 
+  'this', 'have', 'or', 'was', 'it', 'their', 'will', 'him', 'now', 'at', 'be', 'when', 
+  'do', 'what', 'while', 'but', 'has', 'shall', 'were', 'are', 'through', '', 'there', 
+  'one', 'out', 'these', 'so', 'had', 'nor', 'down', 'such', 'into', 'our', 'away', 
+  'if', 'who', 'they', 'up', 'first', 'own', 'thus', 'spoke', 'whom', 'them', 'its', 
+  'once', 'over', 'then', 'went', 'upon', 'said', 'may', 'we', 'which'
+]);  
+  
+
 function heatHSL(val) {
   return `hsl(${55 + val}, 75%, 75%)`
 }
@@ -45,8 +57,25 @@ function extractQuotes(doc) {
       .reduce((acc, curr) => acc + curr * (1 / quoteData.quotes.length), 0);
     speakers.push(quoteData);
   }
-  speakers.sort((a, b) => a.name.localeCompare(b.name));
+  speakers.sort((a, b) => a.sent - b.sent);
   return speakers;
+}
+
+function topWords(doc) {
+  let fullText = doc.sections.map(sec => sec.text).flat().join(' ').replace(/[\.!"'?,]/g, '').split(' ');
+  let counts = {};
+  fullText.forEach(val => counts[val] = (counts[val] || 0) + 1);
+  let keys = Object.keys(counts);
+  keys.sort((a, b) => counts[b] - counts[a]);
+  let words = [];
+  for(let idx = 0; words.length < 10 && idx < keys.length; idx++) {
+    let word = keys[idx];
+    if(COMMON_WORDS.has(word.toLowerCase())) {
+      continue;
+    }
+    words.push({word: word, count: counts[word]});
+  }
+  return words;
 }
 
 function Analyze({ selected }) {
@@ -66,12 +95,12 @@ function Analyze({ selected }) {
 }
 
 function DocAnalyze({ doc, showHeader }) {
-  console.log(doc);
   let sumSent = doc.sections
     .map(sec => sec.gcp.sent_score * sec.gcp.sent_mag)
     .reduce((acc, curr) => acc + curr, 0);
   let docSent = sumSent / doc.sections.length;
   let speakers = extractQuotes(doc);
+  let words = topWords(doc);
   return (
     <section className="banner style1" style={{ width: '45%' }}>
       <div className="content" style={{ paddingLeft: '0' }}>
@@ -82,6 +111,8 @@ function DocAnalyze({ doc, showHeader }) {
         <span className="major">Sentiment: <b style={{color: heatHSL(docSent * 100)}}>{docSent.toFixed(2)}</b></span>
         <br /><br />
         {speakers.map(speaker => <SpeakerBtn speaker={speaker}/>)}
+        <br /><br />
+        {words.map(word => <WordBtn word={word} words={words} />)}
       </div>
     </section>
   );
@@ -127,13 +158,25 @@ function TextBlock({ sec, key, doc }) {
 function SpeakerBtn({ speaker }) {
   let [visable, setVisable] = useState(false);
   return (
-    <div style={{display: 'inline-block'}}>
+    <div style={{display: 'inline-block', padding: '1.5px'}}>
       <i class="button small" style={{backgroundColor: heatHSL(speaker.sent * 160)}}
           onClick={() => setVisable(!visable)}>
         {speaker.name} ({speaker.quotes.length})
       </i>
       {visable && speaker.quotes.map((quote, idx) => 
         <blockquote key={idx} style={{ borderLeftColor: heatHSL(quote.sent * 60) }}>{quote.text}</blockquote>)}
+    </div>
+  );
+}
+
+function WordBtn({ word, words }) {
+  let min = Math.min(...words.map(w => w.count));
+  let max = Math.max(...words.map(w => w.count));
+  return (
+    <div style={{display: 'inline-block', padding: '1.5px'}}>
+      <i class="button small" style={{backgroundColor: `hsla(180, 75%, 75%, ${(word.count - min) / max})`}}>
+        {word.word} ({word.count})
+      </i>
     </div>
   );
 }

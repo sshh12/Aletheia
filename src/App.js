@@ -22,7 +22,7 @@ class App extends React.Component {
     let search = window.location.search;
     let selected = null;
     if(search && db) {
-      let docNames = search.substring(1).split('--');
+      let docNames = search.substring(1).split('-vs-');
       selected = [
         db.find(doc => doc.name == docNames[0]),
         db.find(doc => doc.name == docNames[1])
