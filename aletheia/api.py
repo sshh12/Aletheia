@@ -1,5 +1,6 @@
 from google.cloud import language_v1 as language
 from google.cloud.language_v1 import enums
+from allennlp.predictors.predictor import Predictor
 import textrazor
 import tempfile
 import json
@@ -12,6 +13,10 @@ textrazor.api_key = os.environ.get('TEXTRAZOR_KEY', '')
 textrazor_client = textrazor.TextRazor(extractors=['entities'])
 
 gcp_client = language.LanguageServiceClient()
+
+event2mind_predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/event2mind-2018.10.26.tar.gz")
+qa_predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bidaf-elmo-model-2018.11.30-charpad.tar.gz")
+sent_predictor = Predictor.from_path("https://s3-us-west-2.amazonaws.com/allennlp/models/sst-2-basic-classifier-glove-2019.06.27.tar.gz")
 
 
 def run_corenlp(texts, java_args='-Xmx8g'):
@@ -72,4 +77,16 @@ def run_google_cloud(texts):
             for ent in ent_resp.entities
         ]
         out.append(text_result)
+    return out
+
+
+def run_allennlp(texts):
+    out = []
+    for text in texts:
+        data = {}
+        data['event_to_mind'] = event2mind_predictor.predict(source=text)
+        data['qa_what'] = qa_predictor.predict(passage=text, question='What?')
+        data['qa_why'] = qa_predictor.predict(passage=text, question='Why?')
+        data['sent'] = sent_predictor.predict(sentence=text)
+        out.append(data)
     return out

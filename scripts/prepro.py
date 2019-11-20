@@ -14,8 +14,12 @@ BUILD_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'BUIL
 def process_sections(raw_sections):
     gcp_results = api.run_google_cloud(raw_sections)
     textrazor_results =api.run_textrazor(raw_sections)
+    allennlp_results = api.run_allennlp(raw_sections)
     return [
-        dict(text=text, gcp=gcp_results[i], textrazor=textrazor_results[i])
+        dict(text=text, 
+            gcp=gcp_results[i], 
+            textrazor=textrazor_results[i], 
+            allennlp=allennlp_results[i])
         for i, text in enumerate(raw_sections)
     ]
 
@@ -34,7 +38,8 @@ def process_doc(name, meta, raw_doc):
         word_cnt=word_cnt,
         section_cnt=section_cnt,
         sections=sections,
-        corenlp=api.run_corenlp([raw_doc])[0]
+        corenlp=api.run_corenlp([raw_doc])[0],
+        allennlp=api.run_allennlp([raw_doc])[0]
     )
     return doc_data
 
