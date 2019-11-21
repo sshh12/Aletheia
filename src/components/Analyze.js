@@ -9,7 +9,24 @@ const COMMON_WORDS = new Set([
   'one', 'out', 'these', 'so', 'had', 'nor', 'down', 'such', 'into', 'our', 'away', 
   'if', 'who', 'they', 'up', 'first', 'own', 'thus', 'spoke', 'whom', 'them', 'its', 
   'once', 'over', 'then', 'went', 'upon', 'said', 'may', 'we', 'which'
-]);  
+]);
+
+const EMOTION_MAP = {
+  sad: '😢',
+  upset: '😩',
+  angry: '😠',
+  scared: '😨',
+  hurt: '🤕',
+  disappointed: '😞',
+  pained: '😧',
+  happy: '😄',
+  excited: '🤩',
+  satisfied: '😊',
+  disgusted: '😒',
+  dead: '💀',
+  none: '',
+  '@@UNKNOWN@@': ''
+};
   
 
 function heatHSL(val) {
@@ -101,6 +118,7 @@ function DocAnalyze({ doc, showHeader }) {
   let docSent = sumSent / doc.sections.length;
   let speakers = extractQuotes(doc);
   let words = topWords(doc);
+  console.log(doc);
   return (
     <section className="banner style1" style={{ width: '45%' }}>
       <div className="content" style={{ paddingLeft: '0' }}>
@@ -146,11 +164,23 @@ function TextBlock({ sec, key, doc }) {
     let regex = new RegExp(`\\b${ent.text}\\b`);
     text = text.replace(regex, `<b>${ent.text}</b>`);
   }
+  let event2Mind = sec.allennlp.event_to_mind.oreact_top_k_predicted_tokens;
+  let event2MindProbs = sec.allennlp.event_to_mind.oreact_top_k_log_probabilities;
+  let mindWords = [];
+  if(event2Mind[0][0] != 'none') {
+    for(let i in event2Mind) {
+      if(event2MindProbs[i] > -3) {
+        mindWords.push(EMOTION_MAP[event2Mind[i][0]]);
+      }
+    }
+  }
   return (
     <section key={key} className="style1" style={{ width: '45%' }}>
       <div className="content">
-        <blockquote style={{ borderLeftColor: heatHSL(sentiment) }} dangerouslySetInnerHTML={{__html: text}}/>
+        <blockquote style={{ borderLeftColor: heatHSL(sentiment), marginBottom: '0' }} dangerouslySetInnerHTML={{__html: text}}/>
+        <span>{mindWords.join(' ')}</span>
       </div>
+      <br />
     </section>
   );
 }

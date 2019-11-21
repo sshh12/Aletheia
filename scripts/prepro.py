@@ -2,6 +2,7 @@ import sys; sys.path.append('..')
 import os
 import json
 import glob
+import tqdm
 
 from aletheia import api, parsing
 
@@ -48,7 +49,7 @@ def process_doc(name, meta, raw_doc):
 def process_all():
     docs = []
     aligners = {}
-    for fn in glob.iglob(os.path.join(RAW_DB_PATH, '*.*.*.txt')):
+    for fn in tqdm.tqdm(glob.glob(os.path.join(RAW_DB_PATH, '*.*.*.txt'))):
         with open(fn, 'r', encoding='utf-8') as f:
             raw = f.read()
         with open(fn.replace('.txt', '.meta'), 'r', encoding='utf-8') as f:
