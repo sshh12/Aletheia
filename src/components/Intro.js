@@ -28,7 +28,7 @@ function Intro({ db }) {
       <section className="banner style1 orient-left content-align-left image-position-right fullscreen onload-image-fade-in onload-content-fade-right">
         <div className="content">
           <h1>Aletheia</h1>
-          <p className="major">A high level translation comparison tool.</p>
+          <p className="major">An AI-powered epic translation comparison tool.</p>
           {!db && <p className="major"><i>Loading Archive...</i></p>}
           {db &&
             <div className="fields">
