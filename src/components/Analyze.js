@@ -100,8 +100,8 @@ function Analyze({ selected }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'baseline'}}>
-        <DocAnalyze doc={selected[0]} showHeader={true} />
-        <DocAnalyze doc={selected[1]} />
+        <DocAnalyze doc={selected[0]} otherDoc={selected[1]} showHeader={true} />
+        <DocAnalyze doc={selected[1]} otherDoc={selected[0]} />
       </div>
       {[...Array(rowCnt).keys()].map(idx =>
         <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'left' }}>
@@ -111,25 +111,54 @@ function Analyze({ selected }) {
   );
 }
 
-function DocAnalyze({ doc, showHeader }) {
+function DocAnalyze({ doc, otherDoc, showHeader }) {
   let sumSent = doc.sections
     .map(sec => sec.gcp.sent_score * sec.gcp.sent_mag)
     .reduce((acc, curr) => acc + curr, 0);
   let docSent = sumSent / doc.sections.length;
   let speakers = extractQuotes(doc);
   let words = topWords(doc);
+  let stats = [
+    {name: 'Words', 
+      val: doc.word_cnt, 
+      otherVal: otherDoc.word_cnt},
+    {name: 'Readability', 
+      val: doc.readability.readabilitygrades.FleschReadingEase.toFixed(2),
+      otherVal: otherDoc.readability.readabilitygrades.FleschReadingEase.toFixed(2)},
+    {name: 'Words/Sentence', 
+      val: doc.readability.sentenceinfo.words_per_sentence.toFixed(2),
+      otherVal: otherDoc.readability.sentenceinfo.words_per_sentence.toFixed(2)},
+    {name: 'Syllables/Word', 
+      val: doc.readability.sentenceinfo.syll_per_word.toFixed(2),
+      otherVal: otherDoc.readability.sentenceinfo.syll_per_word.toFixed(2)},
+    {name: 'Letters/Word', 
+      val: doc.readability.sentenceinfo.characters_per_word.toFixed(2),
+      otherVal: otherDoc.readability.sentenceinfo.characters_per_word.toFixed(2)},
+    {name: 'Complex Words', 
+      val: doc.readability.sentenceinfo.complex_words,
+      otherVal: otherDoc.readability.sentenceinfo.complex_words},
+    {name: 'Type-Token Ratio', 
+      val: doc.readability.sentenceinfo.type_token_ratio.toFixed(3),
+      otherVal: otherDoc.readability.sentenceinfo.type_token_ratio.toFixed(3)}
+  ];
   console.log(doc);
   return (
     <section className="banner style1" style={{ width: '45%' }}>
       <div className="content" style={{ paddingLeft: '0' }}>
         {showHeader ? <h1>{doc.poem} / {doc.book}</h1> : <h1>&nbsp;</h1>}
         <h1 style={{ fontSize: '2em' }}>{doc.translator}</h1>
-        <span className="major">Words: <b>{doc.word_cnt}</b></span>
+        <span className="major">Total Sentiment: <b style={{color: heatHSL(docSent * 100)}}>{docSent.toFixed(2)}</b></span>
         <br />
-        <span className="major">Sentiment: <b style={{color: heatHSL(docSent * 100)}}>{docSent.toFixed(2)}</b></span>
-        <br /><br />
+        {stats.map(stat => [
+          stat.val > stat.otherVal ? 
+            <span className="major">{stat.name}: <b style={{fontWeight: '600'}}>{stat.val}</b></span> :
+            <span className="major">{stat.name}: <b>{stat.val}</b></span>
+          , <br />])}
+        <br />
+        <span>Sentiment by Quote Speaker:</span><br/>
         {speakers.map(speaker => <SpeakerBtn speaker={speaker}/>)}
         <br /><br />
+        <span>Unique Words:</span><br/>
         {words.map(word => <WordBtn word={word} words={words} />)}
       </div>
     </section>
@@ -148,6 +177,27 @@ function RowAnalyze({ idx, docs, key }) {
 function TextBlock({ sec, key, doc }) {
   let sentiment = sec.gcp.sent_score * sec.gcp.sent_mag * 60;
   let text = sec.text;
+
+  let event2Mind = sec.allennlp.event_to_mind.oreact_top_k_predicted_tokens;
+  let event2MindProbs = sec.allennlp.event_to_mind.oreact_top_k_log_probabilities;
+  let mindWords = [];
+  if(event2Mind[0][0] != 'none') {
+    for(let i in event2Mind) {
+      if(event2MindProbs[i] > -3) {
+        mindWords.push(EMOTION_MAP[event2Mind[i][0]]);
+      }
+    }
+  }
+
+  let qa_what_str = sec.allennlp.qa_what.best_span_str;
+  let qa_why_str = sec.allennlp.qa_why.best_span_str;
+  for(let item of [qa_what_str, qa_why_str]) {
+    try {
+      let regex = new RegExp(`\\b${item}\\b`);
+      text = text.replace(regex, `<b>${item}</b>`);
+    } catch(e) {}
+  }
+
   for(let ent of sec.gcp.entities) {
     if(ent.salience < 0.01) {
       continue;
@@ -164,16 +214,7 @@ function TextBlock({ sec, key, doc }) {
     let regex = new RegExp(`\\b${ent.text}\\b`);
     text = text.replace(regex, `<b>${ent.text}</b>`);
   }
-  let event2Mind = sec.allennlp.event_to_mind.oreact_top_k_predicted_tokens;
-  let event2MindProbs = sec.allennlp.event_to_mind.oreact_top_k_log_probabilities;
-  let mindWords = [];
-  if(event2Mind[0][0] != 'none') {
-    for(let i in event2Mind) {
-      if(event2MindProbs[i] > -3) {
-        mindWords.push(EMOTION_MAP[event2Mind[i][0]]);
-      }
-    }
-  }
+
   return (
     <section key={key} className="style1" style={{ width: '45%' }}>
       <div className="content">
@@ -189,7 +230,7 @@ function SpeakerBtn({ speaker }) {
   let [visable, setVisable] = useState(false);
   return (
     <div style={{display: 'inline-block', padding: '1.5px'}}>
-      <i class="button small" style={{backgroundColor: heatHSL(speaker.sent * 160)}}
+      <i className="button small" style={{backgroundColor: heatHSL(speaker.sent * 160)}}
           onClick={() => setVisable(!visable)}>
         {speaker.name} ({speaker.quotes.length})
       </i>
@@ -204,7 +245,7 @@ function WordBtn({ word, words }) {
   let max = Math.max(...words.map(w => w.count));
   return (
     <div style={{display: 'inline-block', padding: '1.5px'}}>
-      <i class="button small" style={{backgroundColor: `hsla(180, 75%, 75%, ${(word.count - min) / max})`}}>
+      <i className="button small" style={{backgroundColor: `hsla(180, 75%, 75%, ${(word.count - min) / max})`}}>
         {word.word} ({word.count})
       </i>
     </div>
